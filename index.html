@@ -276,33 +276,17 @@
     document.getElementById('error').style.display='none';
     document.getElementById('status').textContent='Fetching trending tokens...';
     try{
-      // Fetch both boost feed and new pairs simultaneously
-      var [r1, r3] = await Promise.all([
-        fetch('https://api.dexscreener.com/token-boosts/latest/v1'),
-        fetch('https://api.dexscreener.com/token-boosts/top/v1')
+      // Pull directly from new Solana pairs - much more data
+      var [r1, r2, r3] = await Promise.all([
+        fetch('https://api.dexscreener.com/latest/dex/search?q=pump'),
+        fetch('https://api.dexscreener.com/latest/dex/search?q=sol+meme'),
+        fetch('https://api.dexscreener.com/latest/dex/search?q=raydium')
       ]);
-      var boosts1 = r1.ok ? await r1.json() : [];
-      var boosts2 = r3.ok ? await r3.json() : [];
-      var combined = boosts1.concat(boosts2);
-      var seen0 = {};
-      var solTokens = combined.filter(function(t){
-        if(t.chainId!=='solana'||seen0[t.tokenAddress]) return false;
-        seen0[t.tokenAddress]=true; return true;
-      }).slice(0,60);
-      if(!solTokens.length) throw new Error('No Solana tokens in feed');
-
-      document.getElementById('status').textContent='Loading pair data for '+solTokens.length+' tokens...';
-      // DexScreener allows max 30 addresses per call so split into batches
-      var batches = [];
-      for(var i=0;i<solTokens.length;i+=30){
-        batches.push(solTokens.slice(i,i+30).map(function(t){ return t.tokenAddress; }).join(','));
-      }
-      var pairs = [];
-      for(var b=0;b<batches.length;b++){
-        var r2=await fetch('https://api.dexscreener.com/latest/dex/tokens/'+batches[b]);
-        if(r2.ok){ var d=await r2.json(); pairs=pairs.concat(d.pairs||[]); }
-      }
-      var data = {pairs: pairs};
+      var d1 = r1.ok ? await r1.json() : {pairs:[]};
+      var d2 = r2.ok ? await r2.json() : {pairs:[]};
+      var d3 = r3.ok ? await r3.json() : {pairs:[]};
+      var allPairs = (d1.pairs||[]).concat(d2.pairs||[]).concat(d3.pairs||[]);
+      var data = {pairs: allPairs};
 
       var now=Date.now();
       var seen={};
