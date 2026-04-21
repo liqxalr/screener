@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCREENER</title>
+<style>
+  :root { --g: #00ff88; --r: #ff3355; --y: #ffd700; --d: #666; --b: #222; --s: #111; --t: #e0e0e0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a0a; color: var(--t); font-family: monospace; padding: 16px 12px; min-height: 100vh; }
+  h1 { font-size: 26px; font-weight: 700; color: var(--g); letter-spacing: 4px; }
+  .sub { font-size: 9px; color: var(--d); letter-spacing: 2px; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--b); padding-bottom: 12px; margin-bottom: 16px; }
+  button { cursor: pointer; font-family: monospace; }
+  #loadBtn { background: none; border: 1px solid var(--g); color: var(--g); font-size: 9px; padding: 6px 14px; letter-spacing: 2px; }
+  .filters { display: flex; gap: 6px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
+  .filters span { font-size: 8px; color: var(--d); letter-spacing: 2px; }
+  .fb { padding: 4px 10px; border: 1px solid var(--b); background: var(--s); color: var(--d); font-size: 9px; }
+  .fb.active { border-color: var(--g); background: var(--g); color: #000; }
+  .section-label { font-size: 8px; letter-spacing: 3px; margin-bottom: 10px; }
+  .fresh-label { color: var(--g); }
+  .live-label { color: var(--y); margin-top: 16px; }
+  .card { background: var(--s); border: 1px solid var(--b); padding: 12px; margin-bottom: 8px; cursor: pointer; border-left: 3px solid var(--b); transition: border-color 0.15s; }
+  .card:hover { border-color: var(--d); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+  .coin-sym { font-size: 18px; font-weight: 700; letter-spacing: 2px; }
+  .badge { font-size: 8px; padding: 2px 6px; border: 1px solid; margin-left: 8px; }
+  .badge.fresh { border-color: var(--g); color: var(--g); }
+  .badge.live { border-color: var(--y); color: var(--y); }
+  .pct { font-size: 15px; font-weight: 700; }
+  .price-sm { font-size: 9px; color: var(--d); text-align: right; }
+  .card-meta { display: flex; gap: 10px; font-size: 9px; color: var(--d); margin-bottom: 7px; }
+  .card-meta span span { color: var(--t); }
+  .card-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tag { font-size: 8px; padding: 1px 5px; border: 1px solid var(--b); color: var(--d); }
+  .tag.bad { border-color: #330011; color: var(--r); }
+  .score-val { font-size: 12px; font-weight: 700; }
+  #status { font-size: 9px; color: var(--y); margin-bottom: 8px; min-height: 14px; }
+  #error { border: 1px solid var(--r); padding: 12px; color: var(--r); font-size: 11px; margin-bottom: 14px; display: none; line-height: 1.6; }
+  #updated { font-size: 9px; color: var(--d); margin-bottom: 8px; }
+  #empty { text-align: center; padding: 50px 20px; color: var(--d); display: block; }
+  #empty .big { font-size: 22px; font-weight: 700; color: var(--b); letter-spacing: 3px; margin-bottom: 8px; }
+  #detail { display: none; }
+  #backBtn { background: none; border: 1px solid var(--b); color: var(--d); font-size: 10px; padding: 6px 12px; margin-bottom: 14px; }
+  .detail-card { background: var(--s); border: 1px solid var(--b); border-left: 3px solid var(--g); padding: 14px; margin-bottom: 14px; }
+  .detail-sym { font-size: 22px; font-weight: 700; letter-spacing: 2px; margin-bottom: 2px; }
+  .detail-name { font-size: 9px; color: var(--d); margin-bottom: 10px; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10px; }
+  .detail-grid .lbl { color: var(--d); margin-bottom: 2px; }
+  .detail-grid .val { font-weight: 700; }
+  .calc-label { font-size: 9px; color: var(--d); letter-spacing: 2px; margin-bottom: 10px; }
+  .inp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .inp-group label { display: block; font-size: 8px; color: var(--d); letter-spacing: 2px; margin-bottom: 4px; }
+  .inp-group input { background: #0a0a0a; border: 1px solid var(--b); color: var(--t); font-family: monospace; font-size: 12px; padding: 8px 10px; width: 100%; outline: none; }
+  .inp-group input:focus { border-color: var(--g); }
+  .inp-group.full { grid-column: 1/-1; }
+  .rr-row { display: flex; gap: 6px; margin-bottom: 12px; }
+  .rr-btn { flex: 1; padding: 8px 0; border: 1px solid var(--b); background: var(--s); color: var(--d); font-family: monospace; font-size: 11px; font-weight: 700; }
+  .rr-btn.active { border-color: var(--g); background: var(--g); color: #000; }
+  .result-box { background: var(--s); border: 1px solid var(--b); padding: 12px; }
+  .result-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--b); font-size: 11px; }
+  .result-row:last-child { border-bottom: none; }
+  .result-row .rl { color: var(--d); }
+  .result-row .rv { font-weight: 700; }
+  #calcPlaceholder { background: var(--s); border: 1px solid var(--b); padding: 20px; text-align: center; font-size: 10px; color: var(--d); }
+</style>
+</head>
+<body>
+
+<div id="list">
+  <header>
+    <div><h1>SCREENER</h1><div class="sub">SOLANA · $10K+ VOL · MAX 25H</div></div>
+    <button id="loadBtn" onclick="loadCoins()">↻ LOAD</button>
+  </header>
+  <div id="updated"></div>
+  <div id="status"></div>
+  <div id="error"></div>
+  <div class="filters">
+    <span>MIN SCORE:</span>
+    <button class="fb active" onclick="setScore(0,this)">0+</button>
+    <button class="fb" onclick="setScore(1,this)">1+</button>
+    <button class="fb" onclick="setScore(2,this)">2+</button>
+    <button class="fb" onclick="setScore(3,this)">3+</button>
+    <button class="fb" onclick="setScore(4,this)">4+</button>
+  </div>
+  <div id="empty"><div class="big">READY</div><div>Hit LOAD to fetch live Solana memecoins</div></div>
+  <div id="freshSection" style="display:none">
+    <div class="section-label fresh-label">⚡ FRESH — UNDER 40 MINS (<span id="freshCount">0</span>)</div>
+    <div id="freshList"></div>
+  </div>
+  <div id="liveSection" style="display:none">
+    <div class="section-label live-label">🔥 STILL LIVE — UP TO 25H (<span id="liveCount">0</span>)</div>
+    <div id="liveList"></div>
+  </div>
+</div>
+
+<div id="detail">
+  <button id="backBtn" onclick="showList()">← Back</button>
+  <div class="detail-card">
+    <div class="detail-sym" id="dSym"></div>
+    <div class="detail-name" id="dName"></div>
+    <div class="detail-grid">
+      <div><div class="lbl">Price</div><div class="val" id="dPrice"></div></div>
+      <div><div class="lbl">24h Change</div><div class="val" id="dPct"></div></div>
+      <div><div class="lbl">Volume 24h</div><div class="val" id="dVol"></div></div>
+      <div><div class="lbl">Liquidity</div><div class="val" id="dLiq"></div></div>
+      <div><div class="lbl">Age</div><div class="val" id="dAge"></div></div>
+      <div><div class="lbl">Chain</div><div class="val" style="color:var(--t)">Solana</div></div>
+    </div>
+  </div>
+  <div class="calc-label">POSITION CALCULATOR</div>
+  <div class="inp-grid">
+    <div class="inp-group"><label>ACCOUNT ($)</label><input type="number" id="cAcc" placeholder="1000" oninput="calcPos()"></div>
+    <div class="inp-group"><label>RISK (%)</label><input type="number" id="cRisk" value="2" oninput="calcPos()"></div>
+    <div class="inp-group full"><label>STOP LOSS ($)</label><input type="number" id="cStop" placeholder="0" oninput="calcPos()"></div>
+  </div>
+  <div style="font-size:8px;color:var(--d);letter-spacing:2px;margin-bottom:6px">REWARD:RISK</div>
+  <div class="rr-row">
+    <button class="rr-btn" onclick="setRR(2,this)">2:1</button>
+    <button class="rr-btn active" onclick="setRR(3,this)">3:1</button>
+    <button class="rr-btn" onclick="setRR(4,this)">4:1</button>
+    <button class="rr-btn" onclick="setRR(5,this)">5:1</button>
+  </div>
+  <div id="calcResult"><div id="calcPlaceholder">Enter account size and stop loss to calculate</div></div>
+</div>
+
+<script>
+  var allCoins = [], minScore = 0, currentCoin = null, rrVal = 3;
+
+  function fmt(n) { return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":n?.toFixed(2)??"—"; }
+  function ageStr(ms) { var m=Math.floor(ms/60000); return m<60?m+"m":(m/60).toFixed(1)+"h"; }
+
+  function scoreCard(c) {
+    var s=0, items=[];
+    var ageMin=c.ageMs/60000;
+    if(ageMin<=40){s++;items.push({t:"Fresh",ok:true});}else{items.push({t:"Aged",ok:false});}
+    if(c.volume24h>=50000){s++;items.push({t:"Vol $50K+",ok:true});}
+    else if(c.volume24h>=10000){s+=0.5;items.push({t:"Vol $10K+",ok:true});}
+    else{items.push({t:"Low vol",ok:false});}
+    if(Math.abs(c.priceChange24h)>=20){s++;items.push({t:"Strong move",ok:true});}else{items.push({t:"Weak move",ok:false});}
+    if(c.liquidity>=20000){s++;items.push({t:"Liq OK",ok:true});}else{items.push({t:"Low liq",ok:false});}
+    return {score:Math.round(s),items};
+  }
+
+  function cardColor(score) { return score>=3?"#00ff88":score>=2?"#ffd700":"#ff3355"; }
+
+  function makeCard(c) {
+    var sc=scoreCard(c), pc=c.priceChange24h, isFresh=c.ageMs<=40*60*1000;
+    var col=cardColor(sc.score), pcCol=pc>=0?"#00ff88":"#ff3355";
+    var priceStr=c.price<0.0001?c.price.toExponential(2):c.price.toFixed(6);
+    var tags=sc.items.map(function(it){ return '<span class="tag'+(it.ok?'':' bad')+'">'+it.t+'</span>'; }).join('');
+    var div=document.createElement('div');
+    div.className='card';
+    div.style.borderLeftColor=col;
+    div.innerHTML='<div class="card-top">'
+      +'<div><span class="coin-sym">'+c.symbol+'</span><span class="badge '+(isFresh?'fresh':'live')+'">'+(isFresh?'FRESH':'STILL LIVE')+'</span></div>'
+      +'<div><div class="pct" style="color:'+pcCol+'">'+(pc>=0?'+':'')+pc.toFixed(1)+'%</div><div class="price-sm">$'+priceStr+'</div></div>'
+      +'</div>'
+      +'<div class="card-meta"><span>Vol: <span>$'+fmt(c.volume24h)+'</span></span><span>Liq: <span>$'+fmt(c.liquidity)+'</span></span><span>Age: <span>'+ageStr(c.ageMs)+'</span></span></div>'
+      +'<div class="card-bottom"><div class="tags">'+tags+'</div><span class="score-val" style="color:'+col+'">'+sc.score+'/4</span></div>';
+    div.onclick=function(){ showDetail(c); };
+    return div;
+  }
+
+  function render() {
+    var filtered=allCoins.filter(function(c){ return scoreCard(c).score>=minScore; });
+    var fresh=filtered.filter(function(c){ return c.ageMs<=40*60*1000; });
+    var live=filtered.filter(function(c){ return c.ageMs>40*60*1000&&c.ageMs<=25*60*60*1000; });
+    var older=filtered.filter(function(c){ return c.ageMs>25*60*60*1000; });
+    var allLive=live.concat(older);
+    document.getElementById('empty').style.display=(!fresh.length&&!allLive.length)?'block':'none';
+    document.getElementById('freshSection').style.display=fresh.length?'block':'none';
+    document.getElementById('liveSection').style.display=allLive.length?'block':'none';
+    document.getElementById('freshCount').textContent=fresh.length;
+    document.getElementById('liveCount').textContent=allLive.length;
+    var fl=document.getElementById('freshList'); fl.innerHTML='';
+    fresh.forEach(function(c){ fl.appendChild(makeCard(c)); });
+    var ll=document.getElementById('liveList'); ll.innerHTML='';
+    allLive.forEach(function(c){ ll.appendChild(makeCard(c)); });
+  }
+
+  function setScore(n, btn) {
+    minScore=n;
+    document.querySelectorAll('.fb').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    render();
+  }
+
+  async function loadCoins() {
+    document.getElementById('loadBtn').textContent='...';
+    document.getElementById('error').style.display='none';
+    document.getElementById('status').textContent='Fetching from DexScreener...';
+    try {
+      var res=await fetch('https://api.dexscreener.com/token-boosts/latest/v1');
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var boosts=await res.json();
+      var solTokens=(boosts||[]).filter(function(t){ return t.chainId==='solana'; }).slice(0,25);
+      if(!solTokens.length) throw new Error('No Solana tokens found');
+      var addresses=solTokens.map(function(t){ return t.tokenAddress; }).join(',');
+      document.getElementById('status').textContent='Loading pair data...';
+      var res2=await fetch('https://api.dexscreener.com/latest/dex/tokens/'+addresses);
+      if(!res2.ok) throw new Error('HTTP '+res2.status);
+      var data2=await res2.json();
+      var now=Date.now();
+      allCoins=(data2.pairs||[])
+        .filter(function(p){ return p.chainId==='solana'&&p.pairCreatedAt&&p.priceUsd&&(p.volume?.h24||0)>=10000; })
+        .map(function(p){ return {
+          symbol:p.baseToken?.symbol||'???',
+          name:p.baseToken?.name||'',
+          price:parseFloat(p.priceUsd)||0,
+          priceChange24h:parseFloat(p.priceChange?.h24)||0,
+          volume24h:parseFloat(p.volume?.h24)||0,
+          liquidity:parseFloat(p.liquidity?.usd)||0,
+          ageMs:now-p.pairCreatedAt,
+          pairAddress:p.pairAddress
+        };})
+        .filter(function(p){ return p.price>0; })
+        .sort(function(a,b){ return a.ageMs-b.ageMs; });
+      document.getElementById('updated').textContent='Updated: '+new Date().toLocaleTimeString()+' · '+allCoins.length+' coins';
+      document.getElementById('status').textContent='';
+      render();
+    } catch(e) {
+      document.getElementById('error').style.display='block';
+      document.getElementById('error').textContent='Error: '+e.message;
+      document.getElementById('status').textContent='';
+    }
+    document.getElementById('loadBtn').textContent='↻ LOAD';
+  }
+
+  function showDetail(c) {
+    currentCoin=c;
+    document.getElementById('list').style.display='none';
+    document.getElementById('detail').style.display='block';
+    document.getElementById('dSym').textContent=c.symbol;
+    document.getElementById('dName').textContent=c.name;
+    document.getElementById('dPrice').textContent='$'+(c.price<0.0001?c.price.toExponential(2):c.price.toFixed(8));
+    document.getElementById('dPct').style.color=c.priceChange24h>=0?'#00ff88':'#ff3355';
+    document.getElementById('dPct').textContent=(c.priceChange24h>=0?'+':'')+c.priceChange24h.toFixed(2)+'%';
+    document.getElementById('dVol').textContent='$'+fmt(c.volume24h);
+    document.getElementById('dLiq').textContent='$'+fmt(c.liquidity);
+    document.getElementById('dAge').textContent=ageStr(c.ageMs);
+    document.getElementById('cStop').placeholder='e.g. '+(c.price*0.95).toFixed(8);
+    document.getElementById('cAcc').value='';
+    document.getElementById('cStop').value='';
+    document.getElementById('calcResult').innerHTML='<div id="calcPlaceholder">Enter account size and stop loss to calculate</div>';
+  }
+
+  function showList() {
+    document.getElementById('detail').style.display='none';
+    document.getElementById('list').style.display='block';
+  }
+
+  function setRR(n, btn) {
+    rrVal=n;
+    document.querySelectorAll('.rr-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    calcPos();
+  }
+
+  function calcPos() {
+    if(!currentCoin) return;
+    var acc=parseFloat(document.getElementById('cAcc').value)||0;
+    var risk=parseFloat(document.getElementById('cRisk').value)||0;
+    var sp=parseFloat(document.getElementById('cStop').value)||0;
+    var ep=currentCoin.price;
+    if(!acc||!sp||sp>=ep){
+      document.getElementById('calcResult').innerHTML='<div id="calcPlaceholder">Enter account size and stop loss to calculate</div>';
+      return;
+    }
+    var riskAmt=acc*(risk/100);
+    var stopDist=Math.abs(ep-sp);
+    var tokens=riskAmt/stopDist;
+    var target=ep+stopDist*rrVal;
+    var gain=tokens*(target-ep);
+    var tokStr=tokens>1e6?(tokens/1e6).toFixed(2)+"M":tokens>1e3?(tokens/1e3).toFixed(1)+"K":tokens.toFixed(0);
+    document.getElementById('calcResult').innerHTML='<div class="result-box">'
+      +row("Risk Amount","$"+riskAmt.toFixed(2),"#ff3355")
+      +row("Tokens to Buy",tokStr,"#e0e0e0")
+      +row("Position Size","$"+(tokens*ep).toFixed(2),"#e0e0e0")
+      +row("Target Price","$"+target.toFixed(8),"#00ff88")
+      +row("Potential Gain","+$"+gain.toFixed(2),"#00ff88")
+      +'</div>';
+  }
+
+  function row(l,v,c){ return '<div class="result-row"><span class="rl">'+l+'</span><span class="rv" style="color:'+c+'">'+v+'</span></div>'; }
+</script>
+</body>
+</html>
