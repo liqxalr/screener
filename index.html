@@ -164,7 +164,7 @@
   function fmt(n){ return !n?'$0':n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":'$'+n.toFixed(0); }
   function fmtRaw(n){ return !n?'—':n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":n.toFixed(0); }
   function ageStr(ms){ var m=Math.floor(ms/60000); return m<60?m+"m":(m/60).toFixed(1)+"h"; }
-  function axiomUrl(addr){ return 'https://axiom.trade/t/'+addr+'/@deckard'; }
+  function axiomUrl(addr){ return 'https://axiom.trade/t/'+addr+'/@liqxalr'; }
 
   function scoreCard(c){
     var s=0, items=[];
@@ -276,17 +276,33 @@
     document.getElementById('error').style.display='none';
     document.getElementById('status').textContent='Fetching trending tokens...';
     try{
-      var r1=await fetch('https://api.dexscreener.com/token-boosts/latest/v1');
-      if(!r1.ok) throw new Error('Boost feed error '+r1.status);
-      var boosts=await r1.json();
-      var solTokens=(boosts||[]).filter(function(t){ return t.chainId==='solana'; }).slice(0,30);
+      // Fetch both boost feed and new pairs simultaneously
+      var [r1, r3] = await Promise.all([
+        fetch('https://api.dexscreener.com/token-boosts/latest/v1'),
+        fetch('https://api.dexscreener.com/token-boosts/top/v1')
+      ]);
+      var boosts1 = r1.ok ? await r1.json() : [];
+      var boosts2 = r3.ok ? await r3.json() : [];
+      var combined = boosts1.concat(boosts2);
+      var seen0 = {};
+      var solTokens = combined.filter(function(t){
+        if(t.chainId!=='solana'||seen0[t.tokenAddress]) return false;
+        seen0[t.tokenAddress]=true; return true;
+      }).slice(0,60);
       if(!solTokens.length) throw new Error('No Solana tokens in feed');
 
       document.getElementById('status').textContent='Loading pair data for '+solTokens.length+' tokens...';
-      var addresses=solTokens.map(function(t){ return t.tokenAddress; }).join(',');
-      var r2=await fetch('https://api.dexscreener.com/latest/dex/tokens/'+addresses);
-      if(!r2.ok) throw new Error('Pairs error '+r2.status);
-      var data=await r2.json();
+      // DexScreener allows max 30 addresses per call so split into batches
+      var batches = [];
+      for(var i=0;i<solTokens.length;i+=30){
+        batches.push(solTokens.slice(i,i+30).map(function(t){ return t.tokenAddress; }).join(','));
+      }
+      var pairs = [];
+      for(var b=0;b<batches.length;b++){
+        var r2=await fetch('https://api.dexscreener.com/latest/dex/tokens/'+batches[b]);
+        if(r2.ok){ var d=await r2.json(); pairs=pairs.concat(d.pairs||[]); }
+      }
+      var data = {pairs: pairs};
 
       var now=Date.now();
       var seen={};
